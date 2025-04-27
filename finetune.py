@@ -16,6 +16,7 @@ from transformers import (
     set_seed,
 )
 from trl import SFTTrainer
+from trl import SFTConfig
 
 
 def get_args():
@@ -98,17 +99,20 @@ def main(args):
         num_proc=args.num_proc if args.num_proc else multiprocessing.cpu_count(),
     )
 
+
     # setup the trainer
     trainer = SFTTrainer(
         model=model,
         train_dataset=data,
-        max_seq_length=args.max_seq_length,
-        args=transformers.TrainingArguments(
+        callbacks=None,
+        args=SFTConfig(
+            dataset_text_field=args.dataset_text_field,
+            max_length=args.max_seq_length,
+            learning_rate=args.learning_rate,
             per_device_train_batch_size=args.micro_batch_size,
             gradient_accumulation_steps=args.gradient_accumulation_steps,
             warmup_steps=args.warmup_steps,
             max_steps=args.max_steps,
-            learning_rate=args.learning_rate,
             lr_scheduler_type=args.lr_scheduler_type,
             weight_decay=args.weight_decay,
             bf16=args.bf16,
@@ -118,10 +122,10 @@ def main(args):
             optim="paged_adamw_8bit",
             seed=args.seed,
             run_name=f"train-{args.model_id.split('/')[-1]}",
-            report_to="wandb",
+            #report_to="wandb",
+            report_to="tensorboard",
         ),
         peft_config=lora_config,
-        dataset_text_field=args.dataset_text_field,
     )
 
     # launch
